@@ -1,8 +1,9 @@
 import pygame
 
 import constants as const
-import snake_object as snek
 import gamemap_object as gmap
+import snake_object as snek
+
 
 class GameManager(object):
     def __init__(self):
@@ -11,16 +12,16 @@ class GameManager(object):
         # TODO: Logo
         logo = pygame.image.load("img/snake_logo.png")
         pygame.display.set_icon(logo)
-        
+
         pygame.display.set_caption("Snake")
 
         self.screen = pygame.display.set_mode((const.WIDTH, const.HEIGHT + 40))
 
         self.background_tex = pygame.image.load("img/background.png")
-        self.food_tex     = pygame.image.load("img/food.png")
-        self.big_food_tex = pygame.image.load("img/big_food.png")
-        self.wall_tex     = pygame.image.load("img/wall.png")
-    
+        self.food_tex       = pygame.image.load("img/food.png")
+        self.big_food_tex   = pygame.image.load("img/big_food.png")
+        self.wall_tex       = pygame.image.load("img/wall.png")
+
         self.snakebits = [
             pygame.image.load("img/snakebits/snakebit_hor.png"),
             pygame.image.load("img/snakebits/snakebit_ver.png"),
@@ -37,7 +38,7 @@ class GameManager(object):
             pygame.image.load("img/snakebits/snakebit_tail_left.png"),
             pygame.image.load("img/snakebits/snakebit_tail_right.png"),
         ]
-    
+
 
         self.ui_font = pygame.font.SysFont("monospace", 25, True)
         self.big_food_font = pygame.font.SysFont("monospace", 50, True)
@@ -51,6 +52,8 @@ class GameManager(object):
         # Export map
         self.gamemap.export_map("saved/map_%d_export.txt" % self.maptype)
 
+        self.pink_color = (210, 232, 218)
+
         try:
             self.gamemap.import_map("saved/map_%d_custom.txt" % self.maptype)
         except:
@@ -62,17 +65,16 @@ class GameManager(object):
             exit_code = self.play_game()
             if exit_code == 1:
                 self.gamemap = gmap.GameMap(self.wall_tex, self.food_tex, self.big_food_tex, self.maptype)
-                self.snake   = snek.Snake((const.WIDTH / 2+25, const.HEIGHT / 2), self.snakebits) 
+                self.snake   = snek.Snake((const.WIDTH / 2+25, const.HEIGHT / 2), self.snakebits)
             elif exit_code == 0:
                 running = False
 
-
     def play_game(self):
         beat_highscore = False
-    
+
         last_update = pygame.time.get_ticks() - const.UPDATE_FREQ
         last_big_food = pygame.time.get_ticks() - const.BIG_FOOD_FREQ / 2
-        
+
         direction_input = (-1, -1)
 
         running = True
@@ -96,8 +98,7 @@ class GameManager(object):
                         direction_input = (0, 1)
                     elif event.key == pygame.K_SPACE:
                         paused = not paused
-                    
-                        
+
             if not self.snake.alive and not paused:
                 return 1
 
@@ -117,7 +118,7 @@ class GameManager(object):
                 if score > self.highscore:
                     self.highscore = score
                     beat_highscore = True
-                    
+
                 self.gamemap.big_food_timer -= const.UPDATE_FREQ
 
                 if self.gamemap.big_food_timer <= 0 and self.gamemap.big_food_spawned:
@@ -126,11 +127,11 @@ class GameManager(object):
 
                 if not self.snake.alive:
                     paused = True
-                    replay_label = self.ui_font.render("Press space to restart.", 1, (210, 232, 218))
+                    replay_label = self.ui_font.render("Press space to restart.", 1, self.pink_color)
                     self.screen.blit(replay_label, ((const.WIDTH/3) + 50, (const.HEIGHT/2)))
                     if beat_highscore:
                         self.save_highscore()
-                        new_highscore_label = self.ui_font.render("Congratulations - New Highscore!", 1, (210, 232, 218))
+                        new_highscore_label = self.ui_font.render("Congratulations - New Highscore!", 1, self.pink_color)
                         self.screen.blit(new_highscore_label, ((const.WIDTH/3)-20, const.HEIGHT/2 - 50))
                 else:
                     # clear screen
@@ -140,19 +141,19 @@ class GameManager(object):
                     # Draw snake
                     self.snake.draw(self.screen)
                     # Draw score label
-                    score_label = self.ui_font.render("Score: %d" % score, 1, (210, 232, 218))
+                    score_label = self.ui_font.render("Score: %d" % score, 1, self.pink_color)
                     self.screen.blit(score_label, (const.WIDTH * 0.15, const.HEIGHT + 5))
                     # Draw highscore label
-                    highscore_label = self.ui_font.render("Highscore: %d" % self.highscore, 1, (210, 232, 218))
+                    highscore_label = self.ui_font.render("Highscore: %d" % self.highscore, 1, self.pink_color)
                     self.screen.blit(highscore_label, (const.WIDTH * 0.7, const.HEIGHT + 5))
                     # Draw big food timer
                     if self.gamemap.big_food_spawned:
-                        big_food_label = self.big_food_font.render("%d" % (self.gamemap.big_food_timer / const.UPDATE_FREQ), 1, (210, 232, 218))
+                        big_food_label = self.big_food_font.render("%d" % (self.gamemap.big_food_timer / const.UPDATE_FREQ), 1, self.pink_color)
                         self.screen.blit(big_food_label, (const.WIDTH*0.45, const.HEIGHT*0.1))
 
                 # Update screen
                 pygame.display.flip()
-            
+
 
         return 0
 

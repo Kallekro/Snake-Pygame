@@ -1,13 +1,12 @@
 #!/usr/env/bin python3
 
 # TODO:
-# - Snake tail
 # - Map type select
+# - Prettier big food
+# - Make walls prettier
 
 import sys
-
 sys.path.append("/src")
-
 import gamemanager_object as gmanager
 
 def main():

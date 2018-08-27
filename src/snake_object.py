@@ -47,7 +47,7 @@ class Snake(object):
             row, col = gamemap.position_to_idx_dict[new_head]
 
         self.positions.append(new_head)
-        
+
         tile = gamemap.grid[row][col]
         if tile == "w" or new_head in self.positions[1:-1]:
             self.alive = False
@@ -159,4 +159,4 @@ class Snake(object):
                 curve += "right"
             else:
                 curve += "left"
-        return self.curves[curve]  
+        return self.curves[curve]
