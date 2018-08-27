@@ -2,9 +2,8 @@
 
 # TODO:
 # - Snake tail
-# - Move snakebits to seperate folder
 # - Map type select
-# - Better restart game (instead of calling entire main again)
+# - Solve curve bug (curves wrong way when turning into passable wall)
 
 import random
 import pygame
@@ -15,14 +14,14 @@ HEIGHT = 900
 UPDATE_FREQ = 100
 BIG_FOOD_FREQ = 30000
 BIG_FOOD_TIME = 2500
-START_SIZE = 3
+START_SIZE = 10
 LIFESAVER_TIME_FACTOR = 0.75
 
 # Map types:
 # 0: No walls
 # 1: Surrounded by walls
 # 2: Walls with gaps
-MAP_TYPE = 2
+MAP_TYPE = 0
 
 class Snake(object):
     def __init__(self, startpos, snakebits):
@@ -30,18 +29,25 @@ class Snake(object):
         self.size = START_SIZE
         self.alive = True
         self.dead_next_move = 0
+        self.direction = (1, 0)
+
+        # Textures
         self.hor_tex    = snakebits[0]
         self.ver_tex    = snakebits[1]
-        self.upleft     = snakebits[2]
-        self.upright    = snakebits[3]
-        self.downright  = snakebits[4]
-        self.downleft   = snakebits[5]
+        self.curves = {
+            "upleft"    : snakebits[2],
+            "upright"   : snakebits[3],
+            "downright" : snakebits[4],
+            "downleft"  : snakebits[5]
+        }
         self.head_up    = snakebits[6]
         self.head_down  = snakebits[7]
         self.head_left  = snakebits[8]
         self.head_right = snakebits[9]
-
-        self.direction = (1, 0)
+        self.tail_up    = snakebits[10]
+        self.tail_down  = snakebits[11]
+        self.tail_left  = snakebits[12]
+        self.tail_right = snakebits[13]
 
     def update(self, gamemap, direction_input):
         if direction_input != (-1, -1):
@@ -93,31 +99,33 @@ class Snake(object):
         for i in range(len(self.positions)):
             tex = ""
             if i == 0 and len(self.positions) > 1:
-                if self.positions[i+1][0] > self.positions[i][0] or self.positions[i+1][0] < self.positions[i][0]:
-                    tex = self.hor_tex
+                if self.positions[i+1][0] > self.positions[i][0]:
+                    if self.positions[i+1][0] - STEPSIZE > self.positions[i][0]:
+                        tex = self.tail_left
+                    else:
+                        tex = self.tail_right
+                elif self.positions[i+1][0] < self.positions[i][0]:
+                    if self.positions[i+1][0] + STEPSIZE < self.positions[i][0]:
+                        tex = self.tail_right
+                    else:
+                        tex = self.tail_left
+                elif self.positions[i+1][1] > self.positions[i][1]:
+                    if self.positions[i+1][1] - STEPSIZE > self.positions[i][1]:
+                        tex = self.tail_up
+                    else:
+                        tex = self.tail_down
                 else:
-                    tex = self.ver_tex
+                    if self.positions[i+1][1] + STEPSIZE < self.positions[i][1]:
+                        tex = self.tail_down
+                    else:
+                        tex = self.tail_up
             elif i < len(self.positions)-1:
                 if self.positions[i-1][0] == self.positions[i+1][0]:
                     tex = self.ver_tex
                 elif self.positions[i-1][1] == self.positions[i+1][1]:
                     tex = self.hor_tex
-                elif self.positions[i-1][0] > self.positions[i][0]\
-                or   self.positions[i+1][0] > self.positions[i][0]:
-                    if self.positions[i-1][1] > self.positions[i][1]\
-                    or self.positions[i+1][1] > self.positions[i][1]:
-                        tex = self.downright
-                    elif self.positions[i-1][1] < self.positions[i][1]\
-                    or   self.positions[i+1][1] < self.positions[i][1]:
-                        tex = self.upright
-                elif self.positions[i-1][0] < self.positions[i][0]\
-                or   self.positions[i+1][0] < self.positions[i][0]:
-                    if self.positions[i-1][1] > self.positions[i][1]\
-                    or self.positions[i+1][1] > self.positions[i][1]:
-                        tex = self.downleft
-                    elif self.positions[i-1][1] < self.positions[i][1]\
-                    or   self.positions[i+1][1] < self.positions[i][1]:
-                        tex = self.upleft
+                else:
+                    tex = self.get_curve(i)
             else:
                 if self.direction[0] == 1:
                     tex = self.head_right
@@ -129,6 +137,53 @@ class Snake(object):
                     tex = self.head_up
             if tex != "":
                 screen.blit(tex,  self.positions[i])
+
+    def get_curve(self, idx):
+        curve = ""
+        # Vertical
+        if self.positions[idx-1][1] < self.positions[idx][1]:
+            if self.positions[idx-1][1] + STEPSIZE == self.positions[idx][1]:
+                curve += "up"
+            else:
+                curve += "down"
+        elif self.positions[idx+1][1] < self.positions[idx][1]:
+            if self.positions[idx+1][1] + STEPSIZE == self.positions[idx][1]:
+                curve += "up"
+            else:
+                curve += "down"
+        elif self.positions[idx-1][1] > self.positions[idx][1]:
+            if self.positions[idx-1][1] - STEPSIZE == self.positions[idx][1]:
+                curve += "down"
+            else:
+                curve += "up"
+        elif self.positions[idx+1][1] > self.positions[idx][1]:
+            if self.positions[idx+1][1] - STEPSIZE == self.positions[idx][1]:
+                curve += "down"
+            else:
+                curve += "up"
+        # Horizontal
+        if self.positions[idx-1][0] < self.positions[idx][0]:
+            if self.positions[idx-1][0] + STEPSIZE == self.positions[idx][0]:
+                curve += "left"
+            else:
+                curve += "right"
+        elif self.positions[idx+1][0] < self.positions[idx][0]:
+            if self.positions[idx+1][0] + STEPSIZE == self.positions[idx][0]:
+                curve += "left"
+            else:
+                curve += "right"
+        elif self.positions[idx-1][0] > self.positions[idx][0]:
+            if self.positions[idx-1][0] - STEPSIZE == self.positions[idx][0]:
+                curve += "right"
+            else:
+                curve += "left"
+        elif self.positions[idx+1][0] > self.positions[idx][0]:
+            if self.positions[idx+1][0] - STEPSIZE == self.positions[idx][0]:
+                curve += "right"
+            else:
+                curve += "left"
+        return self.curves[curve]  
+
 
 class GameMap(object):
     def __init__(self, wall_tex, food_tex, big_food_tex, maptype):
@@ -257,33 +312,37 @@ class GameMap(object):
                             self.grid[i][j] = ""
                         j += 1
                     i += 1
-        except Exception as e:
-            print("%s" % e)
+        except:
+            pass
 
 def main():
     pygame.init()
 
     # TODO: Logo
-    #logo = pygame.image.load("logo32x32.png")
-    #pygame.display.set_icon(logo)
+    logo = pygame.image.load("img/snake_logo.png")
+    pygame.display.set_icon(logo)
     
     pygame.display.set_caption("Snake")
 
     screen = pygame.display.set_mode((WIDTH, HEIGHT + 40))
 
-    background_tex      = pygame.image.load("img/background.png")
+    background_tex = pygame.image.load("img/background.png")
    
     snakebits = [
-        pygame.image.load("img/snakebit_hor.png"),
-        pygame.image.load("img/snakebit_ver.png"),
-        pygame.image.load("img/snakebit_curve_upleft.png"),
-        pygame.image.load("img/snakebit_curve_upright.png"),
-        pygame.image.load("img/snakebit_curve_downright.png"),
-        pygame.image.load("img/snakebit_curve_downleft.png"),
-        pygame.image.load("img/snakebit_head_up.png"),
-        pygame.image.load("img/snakebit_head_down.png"),
-        pygame.image.load("img/snakebit_head_left.png"),
-        pygame.image.load("img/snakebit_head_right.png"),
+        pygame.image.load("img/snakebits/snakebit_hor.png"),
+        pygame.image.load("img/snakebits/snakebit_ver.png"),
+        pygame.image.load("img/snakebits/snakebit_curve_upleft.png"),
+        pygame.image.load("img/snakebits/snakebit_curve_upright.png"),
+        pygame.image.load("img/snakebits/snakebit_curve_downright.png"),
+        pygame.image.load("img/snakebits/snakebit_curve_downleft.png"),
+        pygame.image.load("img/snakebits/snakebit_head_up.png"),
+        pygame.image.load("img/snakebits/snakebit_head_down.png"),
+        pygame.image.load("img/snakebits/snakebit_head_left.png"),
+        pygame.image.load("img/snakebits/snakebit_head_right.png"),
+        pygame.image.load("img/snakebits/snakebit_tail_up.png"),
+        pygame.image.load("img/snakebits/snakebit_tail_down.png"),
+        pygame.image.load("img/snakebits/snakebit_tail_left.png"),
+        pygame.image.load("img/snakebits/snakebit_tail_right.png"),
     ]
   
     food_tex     = pygame.image.load("img/food.png")
@@ -351,7 +410,6 @@ def play_game(screen, gamemap, snake, highscore, background_tex, ui_font, big_fo
             return 1
 
         now = pygame.time.get_ticks()
- 
         if now - last_update >= UPDATE_FREQ + snake.dead_next_move * UPDATE_FREQ * LIFESAVER_TIME_FACTOR and not paused:
             # Update logic
             spawn_big_food = now - last_big_food >= BIG_FOOD_FREQ
@@ -405,7 +463,6 @@ def play_game(screen, gamemap, snake, highscore, background_tex, ui_font, big_fo
         
 
     return 0
-
 
 def get_highscore():
     try:
