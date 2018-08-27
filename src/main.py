@@ -16,13 +16,13 @@ UPDATE_FREQ = 100
 BIG_FOOD_FREQ = 30000
 BIG_FOOD_TIME = 2500
 START_SIZE = 3
-LIFESAVER_TIME_FACTOR = 0.25
+LIFESAVER_TIME_FACTOR = 0.75
 
 # Map types:
 # 0: No walls
 # 1: Surrounded by walls
 # 2: Walls with gaps
-MAP_TYPE = 1
+MAP_TYPE = 2
 
 class Snake(object):
     def __init__(self, startpos, snakebits):
@@ -84,7 +84,7 @@ class Snake(object):
         try:
             next_pos = (new_head[0] + self.direction[0] * STEPSIZE, new_head[1] + self.direction[1] * STEPSIZE)
             i, j = gamemap.position_to_idx_dict[next_pos]
-            if gamemap.grid[i][j] == "w" or next_pos in self.positions:
+            if gamemap.grid[i][j] == "w" or next_pos in self.positions[1:]:
                 self.dead_next_move = 1
         except:
             pass
@@ -226,7 +226,11 @@ class GameMap(object):
             self.grid[i+1][j+1] = ""
         else:
             for i in range(row-1, row+2):
+                if i >= len(self.grid):
+                    break
                 for j in range(col-1, col+2):
+                    if j >= len(self.grid[0]):
+                        break
                     if self.grid[i][j].startswith("bf"):
                         self.grid[i][j] = ""
 
@@ -290,25 +294,35 @@ def main():
     big_food_font = pygame.font.SysFont("monospace", 50, True)
 
     highscore = get_highscore()
-    beat_highscore = False
-
     maptype = MAP_TYPE
 
     gamemap = GameMap(wall_tex, food_tex, big_food_tex, maptype)
     snake   = Snake((WIDTH / 2+25, HEIGHT / 2), snakebits)
 
+    # Export map
+    gamemap.export_map("saved/map_%d_export.txt" % maptype)
+
+    try:
+        gamemap.import_map("saved/map_%d_custom.txt" % maptype)
+    except:
+        pass
+
+    running = True
+    while running:
+        exit_code = play_game(screen, gamemap, snake, highscore, background_tex, ui_font, big_food_font)
+        if exit_code == 1:
+            gamemap = GameMap(wall_tex, food_tex, big_food_tex, maptype)
+            snake   = Snake((WIDTH / 2+25, HEIGHT / 2), snakebits) 
+        elif exit_code == 0:
+            running = False
+
+def play_game(screen, gamemap, snake, highscore, background_tex, ui_font, big_food_font):
+    beat_highscore = False
+  
     last_update = pygame.time.get_ticks() - UPDATE_FREQ
     last_big_food = pygame.time.get_ticks() - BIG_FOOD_FREQ / 2
     
     direction_input = (-1, -1)
-
-    # Export map
-    gamemap.export_map("map_%d_export.txt" % maptype)
-
-    try:
-        gamemap.import_map("map_%d_custom.txt" % maptype)
-    except Exception as e:
-        print("%s" % e)
 
     running = True
     paused  = False
@@ -331,9 +345,10 @@ def main():
                     direction_input = (0, 1)
                 elif event.key == pygame.K_SPACE:
                     paused = not paused
+                
                     
         if not snake.alive and not paused:
-            return -1
+            return 1
 
         now = pygame.time.get_ticks()
  
@@ -391,6 +406,7 @@ def main():
 
     return 0
 
+
 def get_highscore():
     try:
         with open("saved/highscore.txt", "r") as f:
@@ -404,5 +420,4 @@ def save_highscore(score):
         f.write(str(score))
 
 if __name__ == "__main__":
-    while main() != 0:
-        continue
+    main()

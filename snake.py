@@ -16,5 +16,4 @@ if __name__ == "__main__":
 
     import main
 
-    while main.main() != 0:
-        continue
+    main.main()
