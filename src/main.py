@@ -1,9 +1,10 @@
 #!/usr/env/bin python3
 
 # TODO:
-# - Curved snakebits
-# - Avoid endless loop in food spawn
+# - Snake tail
+# - Move snakebits to seperate folder
 # - Map type select
+# - Better restart game (instead of calling entire main again)
 
 import random
 import pygame
@@ -15,18 +16,20 @@ UPDATE_FREQ = 100
 BIG_FOOD_FREQ = 30000
 BIG_FOOD_TIME = 2500
 START_SIZE = 3
+LIFESAVER_TIME_FACTOR = 0.25
 
 # Map types:
 # 0: No walls
 # 1: Surrounded by walls
 # 2: Walls with gaps
-MAP_TYPE = 2
+MAP_TYPE = 1
 
 class Snake(object):
     def __init__(self, startpos, snakebits):
         self.positions = [startpos]
         self.size = START_SIZE
         self.alive = True
+        self.dead_next_move = 0
         self.hor_tex    = snakebits[0]
         self.ver_tex    = snakebits[1]
         self.upleft     = snakebits[2]
@@ -76,13 +79,45 @@ class Snake(object):
         if len(self.positions) > self.size:
             self.positions = self.positions[1:]
 
+        self.dead_next_move = 0
+        # Check if next move would kill without direction change
+        try:
+            next_pos = (new_head[0] + self.direction[0] * STEPSIZE, new_head[1] + self.direction[1] * STEPSIZE)
+            i, j = gamemap.position_to_idx_dict[next_pos]
+            if gamemap.grid[i][j] == "w" or next_pos in self.positions:
+                self.dead_next_move = 1
+        except:
+            pass
+
     def draw(self, screen):
         for i in range(len(self.positions)):
-            if i < len(self.positions)-1:
-                if self.positions[i+1][0] != self.positions[i][0]:
+            tex = ""
+            if i == 0 and len(self.positions) > 1:
+                if self.positions[i+1][0] > self.positions[i][0] or self.positions[i+1][0] < self.positions[i][0]:
                     tex = self.hor_tex
                 else:
                     tex = self.ver_tex
+            elif i < len(self.positions)-1:
+                if self.positions[i-1][0] == self.positions[i+1][0]:
+                    tex = self.ver_tex
+                elif self.positions[i-1][1] == self.positions[i+1][1]:
+                    tex = self.hor_tex
+                elif self.positions[i-1][0] > self.positions[i][0]\
+                or   self.positions[i+1][0] > self.positions[i][0]:
+                    if self.positions[i-1][1] > self.positions[i][1]\
+                    or self.positions[i+1][1] > self.positions[i][1]:
+                        tex = self.downright
+                    elif self.positions[i-1][1] < self.positions[i][1]\
+                    or   self.positions[i+1][1] < self.positions[i][1]:
+                        tex = self.upright
+                elif self.positions[i-1][0] < self.positions[i][0]\
+                or   self.positions[i+1][0] < self.positions[i][0]:
+                    if self.positions[i-1][1] > self.positions[i][1]\
+                    or self.positions[i+1][1] > self.positions[i][1]:
+                        tex = self.downleft
+                    elif self.positions[i-1][1] < self.positions[i][1]\
+                    or   self.positions[i+1][1] < self.positions[i][1]:
+                        tex = self.upleft
             else:
                 if self.direction[0] == 1:
                     tex = self.head_right
@@ -92,8 +127,8 @@ class Snake(object):
                     tex = self.head_down
                 elif self.direction[1] == -1:
                     tex = self.head_up
-
-            screen.blit(tex,  self.positions[i])
+            if tex != "":
+                screen.blit(tex,  self.positions[i])
 
 class GameMap(object):
     def __init__(self, wall_tex, food_tex, big_food_tex, maptype):
@@ -150,12 +185,17 @@ class GameMap(object):
         illegal_positions = []
         for pos in snake.positions:
             illegal_positions.append(self.position_to_idx_dict[pos])
+        loop_counter = 0
         while self.spawn_food:
             i = random.randint(1, HEIGHT / STEPSIZE -1)
             j = random.randint(1, WIDTH / STEPSIZE -1)
             if self.grid[i][j] == "" and (i, j) not in illegal_positions:
                 self.grid[i][j] = "f"
                 self.spawn_food = False
+            if loop_counter > 5:
+                break
+            loop_counter += 1
+        loop_counter = 0
         while spawn_big_food:
             self.big_food_spawned = True
             self.big_food_timer = BIG_FOOD_TIME
@@ -171,6 +211,9 @@ class GameMap(object):
                 self.grid[i+1][j+1] = "bf"
                 spawn_big_food = False
                 self.big_food_idx = (i, j)
+            if loop_counter > 5:
+                break
+            loop_counter += 1
 
     def big_food_eaten(self, row, col):
         self.big_food_timer = 0
@@ -256,7 +299,6 @@ def main():
 
     last_update = pygame.time.get_ticks() - UPDATE_FREQ
     last_big_food = pygame.time.get_ticks() - BIG_FOOD_FREQ / 2
-    last_frame = pygame.time.get_ticks()
     
     direction_input = (-1, -1)
 
@@ -294,9 +336,17 @@ def main():
             return -1
 
         now = pygame.time.get_ticks()
+ 
+        if now - last_update >= UPDATE_FREQ + snake.dead_next_move * UPDATE_FREQ * LIFESAVER_TIME_FACTOR and not paused:
+            # Update logic
+            spawn_big_food = now - last_big_food >= BIG_FOOD_FREQ
+            if spawn_big_food:
+                last_big_food = now
+            gamemap.update(snake, spawn_big_food)
+            snake.update(gamemap, direction_input)
+            direction_input = (-1, -1)
+            last_update = now
 
-        last_frame = now 
-        if now - last_update >= UPDATE_FREQ and not paused:
 
             score = snake.size - START_SIZE
             if score > highscore:
@@ -307,37 +357,7 @@ def main():
 
             if gamemap.big_food_timer <= 0 and gamemap.big_food_spawned:
                 gamemap.big_food_eaten(-1, -1)
-                
-            # clear screen
-            screen.blit(background_tex, (0,0))
-            
-            # Draw map
-            gamemap.draw(screen)
-            
-            # Draw snake
-            snake.draw(screen)
 
-            # Draw score label
-            score_label = ui_font.render("Score: %d" % score, 1, (210, 232, 218))
-            screen.blit(score_label, (WIDTH * 0.15, HEIGHT + 5))
-
-            # Draw highscore label
-            highscore_label = ui_font.render("Highscore: %d" % highscore, 1, (210, 232, 218))
-            screen.blit(highscore_label, (WIDTH * 0.7, HEIGHT + 5))
-
-            # Draw big food timer
-            if gamemap.big_food_spawned:
-                big_food_label = big_food_font.render("%d" % (gamemap.big_food_timer / UPDATE_FREQ), 1, (210, 232, 218))
-                screen.blit(big_food_label, (WIDTH*0.45, HEIGHT*0.1))
-
-            # Update logic
-            spawn_big_food = now - last_big_food >= BIG_FOOD_FREQ
-            if spawn_big_food:
-                last_big_food = now
-            gamemap.update(snake, spawn_big_food)
-            snake.update(gamemap, direction_input)
-            direction_input = (-1, -1)
-            last_update = now
 
             if not snake.alive:
                 paused = True
@@ -347,6 +367,23 @@ def main():
                     save_highscore(highscore)
                     new_highscore_label = ui_font.render("Congratulations - New Highscore!", 1, (210, 232, 218))
                     screen.blit(new_highscore_label, ((WIDTH/3)-20, HEIGHT/2 - 50))
+            else:
+                # clear screen
+                screen.blit(background_tex, (0,0))
+                # Draw map
+                gamemap.draw(screen)
+                # Draw snake
+                snake.draw(screen)
+                # Draw score label
+                score_label = ui_font.render("Score: %d" % score, 1, (210, 232, 218))
+                screen.blit(score_label, (WIDTH * 0.15, HEIGHT + 5))
+                # Draw highscore label
+                highscore_label = ui_font.render("Highscore: %d" % highscore, 1, (210, 232, 218))
+                screen.blit(highscore_label, (WIDTH * 0.7, HEIGHT + 5))
+                # Draw big food timer
+                if gamemap.big_food_spawned:
+                    big_food_label = big_food_font.render("%d" % (gamemap.big_food_timer / UPDATE_FREQ), 1, (210, 232, 218))
+                    screen.blit(big_food_label, (WIDTH*0.45, HEIGHT*0.1))
 
             # Update screen
             pygame.display.flip()
