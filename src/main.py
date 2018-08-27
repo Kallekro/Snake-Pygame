@@ -3,7 +3,6 @@
 # TODO:
 # - Snake tail
 # - Map type select
-# - Solve curve bug (curves wrong way when turning into passable wall)
 
 import random
 import pygame
@@ -315,166 +314,174 @@ class GameMap(object):
         except:
             pass
 
-def main():
-    pygame.init()
 
-    # TODO: Logo
-    logo = pygame.image.load("img/snake_logo.png")
-    pygame.display.set_icon(logo)
-    
-    pygame.display.set_caption("Snake")
+class GameManager(object):
+    def __init__(self):
+        pygame.init()
 
-    screen = pygame.display.set_mode((WIDTH, HEIGHT + 40))
-
-    background_tex = pygame.image.load("img/background.png")
-   
-    snakebits = [
-        pygame.image.load("img/snakebits/snakebit_hor.png"),
-        pygame.image.load("img/snakebits/snakebit_ver.png"),
-        pygame.image.load("img/snakebits/snakebit_curve_upleft.png"),
-        pygame.image.load("img/snakebits/snakebit_curve_upright.png"),
-        pygame.image.load("img/snakebits/snakebit_curve_downright.png"),
-        pygame.image.load("img/snakebits/snakebit_curve_downleft.png"),
-        pygame.image.load("img/snakebits/snakebit_head_up.png"),
-        pygame.image.load("img/snakebits/snakebit_head_down.png"),
-        pygame.image.load("img/snakebits/snakebit_head_left.png"),
-        pygame.image.load("img/snakebits/snakebit_head_right.png"),
-        pygame.image.load("img/snakebits/snakebit_tail_up.png"),
-        pygame.image.load("img/snakebits/snakebit_tail_down.png"),
-        pygame.image.load("img/snakebits/snakebit_tail_left.png"),
-        pygame.image.load("img/snakebits/snakebit_tail_right.png"),
-    ]
-  
-    food_tex     = pygame.image.load("img/food.png")
-    big_food_tex = pygame.image.load("img/big_food.png")
-    wall_tex     = pygame.image.load("img/wall.png")
-
-    ui_font = pygame.font.SysFont("monospace", 25, True)
-    big_food_font = pygame.font.SysFont("monospace", 50, True)
-
-    highscore = get_highscore()
-    maptype = MAP_TYPE
-
-    gamemap = GameMap(wall_tex, food_tex, big_food_tex, maptype)
-    snake   = Snake((WIDTH / 2+25, HEIGHT / 2), snakebits)
-
-    # Export map
-    gamemap.export_map("saved/map_%d_export.txt" % maptype)
-
-    try:
-        gamemap.import_map("saved/map_%d_custom.txt" % maptype)
-    except:
-        pass
-
-    running = True
-    while running:
-        exit_code = play_game(screen, gamemap, snake, highscore, background_tex, ui_font, big_food_font)
-        if exit_code == 1:
-            gamemap = GameMap(wall_tex, food_tex, big_food_tex, maptype)
-            snake   = Snake((WIDTH / 2+25, HEIGHT / 2), snakebits) 
-        elif exit_code == 0:
-            running = False
-
-def play_game(screen, gamemap, snake, highscore, background_tex, ui_font, big_food_font):
-    beat_highscore = False
-  
-    last_update = pygame.time.get_ticks() - UPDATE_FREQ
-    last_big_food = pygame.time.get_ticks() - BIG_FOOD_FREQ / 2
-    
-    direction_input = (-1, -1)
-
-    running = True
-    paused  = False
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key in [pygame.K_LEFT, pygame.K_a] \
-                and snake.direction[0] != 1:
-                    direction_input = (-1, 0)
-                elif event.key in [pygame.K_RIGHT, pygame.K_d] \
-                and snake.direction[0] != -1:
-                    direction_input = (1, 0)
-                elif event.key in [pygame.K_UP, pygame.K_w] \
-                and snake.direction[1] != 1:
-                    direction_input = (0, -1)
-                elif event.key in [pygame.K_DOWN, pygame.K_s] \
-                and snake.direction[1] != -1:
-                    direction_input = (0, 1)
-                elif event.key == pygame.K_SPACE:
-                    paused = not paused
-                
-                    
-        if not snake.alive and not paused:
-            return 1
-
-        now = pygame.time.get_ticks()
-        if now - last_update >= UPDATE_FREQ + snake.dead_next_move * UPDATE_FREQ * LIFESAVER_TIME_FACTOR and not paused:
-            # Update logic
-            spawn_big_food = now - last_big_food >= BIG_FOOD_FREQ
-            if spawn_big_food:
-                last_big_food = now
-            gamemap.update(snake, spawn_big_food)
-            snake.update(gamemap, direction_input)
-            direction_input = (-1, -1)
-            last_update = now
-
-
-            score = snake.size - START_SIZE
-            if score > highscore:
-                highscore = score
-                beat_highscore = True
-                
-            gamemap.big_food_timer -= UPDATE_FREQ
-
-            if gamemap.big_food_timer <= 0 and gamemap.big_food_spawned:
-                gamemap.big_food_eaten(-1, -1)
-
-
-            if not snake.alive:
-                paused = True
-                replay_label = ui_font.render("Press space to restart.", 1, (210, 232, 218))
-                screen.blit(replay_label, ((WIDTH/3) + 50, (HEIGHT/2)))
-                if beat_highscore:
-                    save_highscore(highscore)
-                    new_highscore_label = ui_font.render("Congratulations - New Highscore!", 1, (210, 232, 218))
-                    screen.blit(new_highscore_label, ((WIDTH/3)-20, HEIGHT/2 - 50))
-            else:
-                # clear screen
-                screen.blit(background_tex, (0,0))
-                # Draw map
-                gamemap.draw(screen)
-                # Draw snake
-                snake.draw(screen)
-                # Draw score label
-                score_label = ui_font.render("Score: %d" % score, 1, (210, 232, 218))
-                screen.blit(score_label, (WIDTH * 0.15, HEIGHT + 5))
-                # Draw highscore label
-                highscore_label = ui_font.render("Highscore: %d" % highscore, 1, (210, 232, 218))
-                screen.blit(highscore_label, (WIDTH * 0.7, HEIGHT + 5))
-                # Draw big food timer
-                if gamemap.big_food_spawned:
-                    big_food_label = big_food_font.render("%d" % (gamemap.big_food_timer / UPDATE_FREQ), 1, (210, 232, 218))
-                    screen.blit(big_food_label, (WIDTH*0.45, HEIGHT*0.1))
-
-            # Update screen
-            pygame.display.flip()
+        # TODO: Logo
+        logo = pygame.image.load("img/snake_logo.png")
+        pygame.display.set_icon(logo)
         
+        pygame.display.set_caption("Snake")
 
-    return 0
+        self.screen = pygame.display.set_mode((WIDTH, HEIGHT + 40))
 
-def get_highscore():
-    try:
-        with open("saved/highscore.txt", "r") as f:
-            highscore = int(f.readline())
-        return highscore
-    except:
+        self.background_tex = pygame.image.load("img/background.png")
+        self.food_tex     = pygame.image.load("img/food.png")
+        self.big_food_tex = pygame.image.load("img/big_food.png")
+        self.wall_tex     = pygame.image.load("img/wall.png")
+    
+        self.snakebits = [
+            pygame.image.load("img/snakebits/snakebit_hor.png"),
+            pygame.image.load("img/snakebits/snakebit_ver.png"),
+            pygame.image.load("img/snakebits/snakebit_curve_upleft.png"),
+            pygame.image.load("img/snakebits/snakebit_curve_upright.png"),
+            pygame.image.load("img/snakebits/snakebit_curve_downright.png"),
+            pygame.image.load("img/snakebits/snakebit_curve_downleft.png"),
+            pygame.image.load("img/snakebits/snakebit_head_up.png"),
+            pygame.image.load("img/snakebits/snakebit_head_down.png"),
+            pygame.image.load("img/snakebits/snakebit_head_left.png"),
+            pygame.image.load("img/snakebits/snakebit_head_right.png"),
+            pygame.image.load("img/snakebits/snakebit_tail_up.png"),
+            pygame.image.load("img/snakebits/snakebit_tail_down.png"),
+            pygame.image.load("img/snakebits/snakebit_tail_left.png"),
+            pygame.image.load("img/snakebits/snakebit_tail_right.png"),
+        ]
+    
+
+        self.ui_font = pygame.font.SysFont("monospace", 25, True)
+        self.big_food_font = pygame.font.SysFont("monospace", 50, True)
+
+        self.get_highscore()
+        self.maptype = MAP_TYPE
+
+        self.gamemap = GameMap(self.wall_tex, self.food_tex, self.big_food_tex, self.maptype)
+        self.snake   = Snake((WIDTH / 2+25, HEIGHT / 2), self.snakebits)
+
+        # Export map
+        self.gamemap.export_map("saved/map_%d_export.txt" % self.maptype)
+
+        try:
+            self.gamemap.import_map("saved/map_%d_custom.txt" % self.maptype)
+        except:
+            pass
+
+    def start(self):
+        running = True
+        while running:
+            exit_code = self.play_game()
+            if exit_code == 1:
+                self.gamemap = GameMap(self.wall_tex, self.food_tex, self.big_food_tex, self.maptype)
+                self.snake   = Snake((WIDTH / 2+25, HEIGHT / 2), self.snakebits) 
+            elif exit_code == 0:
+                running = False
+
+
+    def play_game(self):
+        beat_highscore = False
+    
+        last_update = pygame.time.get_ticks() - UPDATE_FREQ
+        last_big_food = pygame.time.get_ticks() - BIG_FOOD_FREQ / 2
+        
+        direction_input = (-1, -1)
+
+        running = True
+        paused  = False
+        while running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                elif event.type == pygame.KEYDOWN:
+                    if event.key in [pygame.K_LEFT, pygame.K_a] \
+                    and self.snake.direction[0] != 1:
+                        direction_input = (-1, 0)
+                    elif event.key in [pygame.K_RIGHT, pygame.K_d] \
+                    and self.snake.direction[0] != -1:
+                        direction_input = (1, 0)
+                    elif event.key in [pygame.K_UP, pygame.K_w] \
+                    and self.snake.direction[1] != 1:
+                        direction_input = (0, -1)
+                    elif event.key in [pygame.K_DOWN, pygame.K_s] \
+                    and self.snake.direction[1] != -1:
+                        direction_input = (0, 1)
+                    elif event.key == pygame.K_SPACE:
+                        paused = not paused
+                    
+                        
+            if not self.snake.alive and not paused:
+                return 1
+
+            now = pygame.time.get_ticks()
+            if now - last_update >= UPDATE_FREQ + self.snake.dead_next_move * UPDATE_FREQ * LIFESAVER_TIME_FACTOR and not paused:
+                # Update logic
+                spawn_big_food = now - last_big_food >= BIG_FOOD_FREQ
+                if spawn_big_food:
+                    last_big_food = now
+                self.gamemap.update(self.snake, spawn_big_food)
+                self.snake.update(self.gamemap, direction_input)
+                direction_input = (-1, -1)
+                last_update = now
+
+
+                score = self.snake.size - START_SIZE
+                if score > self.highscore:
+                    self.highscore = score
+                    beat_highscore = True
+                    
+                self.gamemap.big_food_timer -= UPDATE_FREQ
+
+                if self.gamemap.big_food_timer <= 0 and self.gamemap.big_food_spawned:
+                    self.gamemap.big_food_eaten(-1, -1)
+
+
+                if not self.snake.alive:
+                    paused = True
+                    replay_label = self.ui_font.render("Press space to restart.", 1, (210, 232, 218))
+                    self.screen.blit(replay_label, ((WIDTH/3) + 50, (HEIGHT/2)))
+                    if beat_highscore:
+                        self.save_highscore()
+                        new_highscore_label = self.ui_font.render("Congratulations - New Highscore!", 1, (210, 232, 218))
+                        self.screen.blit(new_highscore_label, ((WIDTH/3)-20, HEIGHT/2 - 50))
+                else:
+                    # clear screen
+                    self.screen.blit(self.background_tex, (0,0))
+                    # Draw map
+                    self.gamemap.draw(self.screen)
+                    # Draw snake
+                    self.snake.draw(self.screen)
+                    # Draw score label
+                    score_label = self.ui_font.render("Score: %d" % score, 1, (210, 232, 218))
+                    self.screen.blit(score_label, (WIDTH * 0.15, HEIGHT + 5))
+                    # Draw highscore label
+                    highscore_label = self.ui_font.render("Highscore: %d" % self.highscore, 1, (210, 232, 218))
+                    self.screen.blit(highscore_label, (WIDTH * 0.7, HEIGHT + 5))
+                    # Draw big food timer
+                    if self.gamemap.big_food_spawned:
+                        big_food_label = self.big_food_font.render("%d" % (self.gamemap.big_food_timer / UPDATE_FREQ), 1, (210, 232, 218))
+                        self.screen.blit(big_food_label, (WIDTH*0.45, HEIGHT*0.1))
+
+                # Update screen
+                pygame.display.flip()
+            
+
         return 0
 
-def save_highscore(score):
-    with open("saved/highscore.txt", "w") as f:
-        f.write(str(score))
+    def get_highscore(self):
+        try:
+            with open("saved/highscore.txt", "r") as f:
+                self.highscore = int(f.readline())
+        except:
+            self.highscore = 0
+
+    def save_highscore(self):
+        with open("saved/highscore.txt", "w") as f:
+            f.write(str(self.highscore))
+
+
+def main():
+    gamemanager = GameManager()
+    gamemanager.start()
 
 if __name__ == "__main__":
     main()
