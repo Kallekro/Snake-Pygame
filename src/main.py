@@ -6,7 +6,6 @@
 # - Make walls prettier
 
 import sys
-sys.path.append("/src")
 import gamemanager_object as gmanager
 
 def main():

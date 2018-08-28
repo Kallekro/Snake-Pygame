@@ -117,46 +117,24 @@ class Snake(object):
 
     def get_curve(self, idx):
         curve = ""
+        dif_x = self.positions[idx-1][0] if self.positions[idx-1][0] != self.positions[idx][0] else self.positions[idx+1][0]
+        dif_y = self.positions[idx-1][1] if self.positions[idx-1][1] != self.positions[idx][1] else self.positions[idx+1][1]
         # Vertical
-        if self.positions[idx-1][1] < self.positions[idx][1]:
-            if self.positions[idx-1][1] + const.STEPSIZE == self.positions[idx][1]:
-                curve += "up"
-            else:
-                curve += "down"
-        elif self.positions[idx+1][1] < self.positions[idx][1]:
-            if self.positions[idx+1][1] + const.STEPSIZE == self.positions[idx][1]:
-                curve += "up"
-            else:
-                curve += "down"
-        elif self.positions[idx-1][1] > self.positions[idx][1]:
-            if self.positions[idx-1][1] - const.STEPSIZE == self.positions[idx][1]:
-                curve += "down"
-            else:
-                curve += "up"
-        elif self.positions[idx+1][1] > self.positions[idx][1]:
-            if self.positions[idx+1][1] - const.STEPSIZE == self.positions[idx][1]:
-                curve += "down"
-            else:
-                curve += "up"
+        if dif_y < self.positions[idx][1] and dif_y + const.STEPSIZE == self.positions[idx][1]:
+            curve += "up"
+        elif dif_y < self.positions[idx][1]:
+            curve += "down"
+        if dif_y > self.positions[idx][1] and dif_y - const.STEPSIZE == self.positions[idx][1]:
+            curve += "down"
+        elif dif_y > self.positions[idx][1]:
+            curve += "up"
         # Horizontal
-        if self.positions[idx-1][0] < self.positions[idx][0]:
-            if self.positions[idx-1][0] + const.STEPSIZE == self.positions[idx][0]:
-                curve += "left"
-            else:
-                curve += "right"
-        elif self.positions[idx+1][0] < self.positions[idx][0]:
-            if self.positions[idx+1][0] + const.STEPSIZE == self.positions[idx][0]:
-                curve += "left"
-            else:
-                curve += "right"
-        elif self.positions[idx-1][0] > self.positions[idx][0]:
-            if self.positions[idx-1][0] - const.STEPSIZE == self.positions[idx][0]:
-                curve += "right"
-            else:
-                curve += "left"
-        elif self.positions[idx+1][0] > self.positions[idx][0]:
-            if self.positions[idx+1][0] - const.STEPSIZE == self.positions[idx][0]:
-                curve += "right"
-            else:
-                curve += "left"
+        if dif_x < self.positions[idx][0] and dif_x + const.STEPSIZE == self.positions[idx][0]:
+            curve += "left"
+        elif dif_x < self.positions[idx][0]:
+            curve += "right"
+        if dif_x > self.positions[idx][0] and dif_x - const.STEPSIZE == self.positions[idx][0]:
+            curve += "right"
+        elif dif_x > self.positions[idx][0]:
+            curve += "left"
         return self.curves[curve]
