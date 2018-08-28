@@ -117,24 +117,25 @@ class Snake(object):
 
     def get_curve(self, idx):
         curve = ""
-        dif_x = self.positions[idx-1][0] if self.positions[idx-1][0] != self.positions[idx][0] else self.positions[idx+1][0]
-        dif_y = self.positions[idx-1][1] if self.positions[idx-1][1] != self.positions[idx][1] else self.positions[idx+1][1]
+        my_x, my_y = self.positions[idx][0], self.positions[idx][1]
+        dif_x = self.positions[idx-1][0] if self.positions[idx-1][0] != my_x else self.positions[idx+1][0]
+        dif_y = self.positions[idx-1][1] if self.positions[idx-1][1] != my_y else self.positions[idx+1][1]
         # Vertical
-        if dif_y < self.positions[idx][1] and dif_y + const.STEPSIZE == self.positions[idx][1]:
+        if dif_y < my_y and dif_y + const.STEPSIZE == my_y:
             curve += "up"
-        elif dif_y < self.positions[idx][1]:
+        elif dif_y < my_y:
             curve += "down"
-        if dif_y > self.positions[idx][1] and dif_y - const.STEPSIZE == self.positions[idx][1]:
+        if dif_y > my_y and dif_y - const.STEPSIZE == my_y:
             curve += "down"
-        elif dif_y > self.positions[idx][1]:
+        elif dif_y > my_y:
             curve += "up"
         # Horizontal
-        if dif_x < self.positions[idx][0] and dif_x + const.STEPSIZE == self.positions[idx][0]:
+        if dif_x < my_x and dif_x + const.STEPSIZE == my_x:
             curve += "left"
-        elif dif_x < self.positions[idx][0]:
+        elif dif_x < my_x:
             curve += "right"
-        if dif_x > self.positions[idx][0] and dif_x - const.STEPSIZE == self.positions[idx][0]:
+        if dif_x > my_x and dif_x - const.STEPSIZE == my_x:
             curve += "right"
-        elif dif_x > self.positions[idx][0]:
+        elif dif_x > my_x:
             curve += "left"
         return self.curves[curve]

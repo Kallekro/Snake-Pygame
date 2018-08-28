@@ -3,7 +3,7 @@ import constants as const
 
 class GameMap(object):
     def __init__(self, wall_tex, food_tex, big_food_tex, maptype):
-        self.grid = [] 
+        self.grid = []
         self.position_to_idx_dict = {}
         self.maptype = maptype
 
@@ -44,7 +44,7 @@ class GameMap(object):
     def draw(self, screen):
         for position, idx in self.position_to_idx_dict.items():
             row, col = idx
-            tile = self.grid[row][col] 
+            tile = self.grid[row][col]
             if tile == "w":
                 screen.blit(self.wall_texture, position)
             elif tile == "f":

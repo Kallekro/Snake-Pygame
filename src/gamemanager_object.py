@@ -1,4 +1,5 @@
 import pygame
+import os
 
 import constants as const
 import gamemap_object as gmap
@@ -9,35 +10,35 @@ class GameManager(object):
     def __init__(self):
         pygame.init()
 
-        # TODO: Logo
-        logo = pygame.image.load("img/snake_logo.png")
+        self.my_path = "%s/.." % os.path.dirname(os.path.realpath(__file__))
+        logo = pygame.image.load("%s/img/snake_logo.png" % self.my_path)
         pygame.display.set_icon(logo)
 
         pygame.display.set_caption("Snake")
 
         self.screen = pygame.display.set_mode((const.WIDTH, const.HEIGHT + 40))
 
-        self.background_tex = pygame.image.load("img/background.png")
-        self.menu_tex       = pygame.image.load("img/menu.png")
-        self.food_tex       = pygame.image.load("img/food.png")
-        self.big_food_tex   = pygame.image.load("img/big_food.png")
-        self.wall_tex       = pygame.image.load("img/wall.png")
+        self.background_tex = pygame.image.load("%s/img/background.png" % self.my_path)
+        self.menu_tex       = pygame.image.load("%s/img/menu.png" % self.my_path)
+        self.food_tex       = pygame.image.load("%s/img/food.png" % self.my_path)
+        self.big_food_tex   = pygame.image.load("%s/img/big_food.png" % self.my_path)
+        self.wall_tex       = pygame.image.load("%s/img/wall.png" % self.my_path)
 
         self.snakebits = [
-            pygame.image.load("img/snakebits/snakebit_hor.png"),
-            pygame.image.load("img/snakebits/snakebit_ver.png"),
-            pygame.image.load("img/snakebits/snakebit_curve_upleft.png"),
-            pygame.image.load("img/snakebits/snakebit_curve_upright.png"),
-            pygame.image.load("img/snakebits/snakebit_curve_downright.png"),
-            pygame.image.load("img/snakebits/snakebit_curve_downleft.png"),
-            pygame.image.load("img/snakebits/snakebit_head_up.png"),
-            pygame.image.load("img/snakebits/snakebit_head_down.png"),
-            pygame.image.load("img/snakebits/snakebit_head_left.png"),
-            pygame.image.load("img/snakebits/snakebit_head_right.png"),
-            pygame.image.load("img/snakebits/snakebit_tail_up.png"),
-            pygame.image.load("img/snakebits/snakebit_tail_down.png"),
-            pygame.image.load("img/snakebits/snakebit_tail_left.png"),
-            pygame.image.load("img/snakebits/snakebit_tail_right.png"),
+            pygame.image.load("%s/img/snakebits/snakebit_hor.png" % self.my_path),
+            pygame.image.load("%s/img/snakebits/snakebit_ver.png" % self.my_path),
+            pygame.image.load("%s/img/snakebits/snakebit_curve_upleft.png" % self.my_path),
+            pygame.image.load("%s/img/snakebits/snakebit_curve_upright.png" % self.my_path),
+            pygame.image.load("%s/img/snakebits/snakebit_curve_downright.png" % self.my_path),
+            pygame.image.load("%s/img/snakebits/snakebit_curve_downleft.png" % self.my_path),
+            pygame.image.load("%s/img/snakebits/snakebit_head_up.png" % self.my_path),
+            pygame.image.load("%s/img/snakebits/snakebit_head_down.png" % self.my_path),
+            pygame.image.load("%s/img/snakebits/snakebit_head_left.png" % self.my_path),
+            pygame.image.load("%s/img/snakebits/snakebit_head_right.png" % self.my_path),
+            pygame.image.load("%s/img/snakebits/snakebit_tail_up.png" % self.my_path),
+            pygame.image.load("%s/img/snakebits/snakebit_tail_down.png" % self.my_path),
+            pygame.image.load("%s/img/snakebits/snakebit_tail_left.png" % self.my_path),
+            pygame.image.load("%s/img/snakebits/snakebit_tail_right.png" % self.my_path),
         ]
 
 
@@ -51,13 +52,13 @@ class GameManager(object):
         self.snake   = snek.Snake((const.WIDTH / 2+25, const.HEIGHT / 2), self.snakebits)
 
         # Export map
-        self.gamemap.export_map("saved/map_%d_export.txt" % self.maptype)
+        self.gamemap.export_map("%s/saved/map_%d_export.txt" % (self.my_path, self.maptype))
 
         self.lightblue_color = (210, 232, 218)
         self.pink_color      = (224,  79, 127)
 
         try:
-            self.gamemap.import_map("saved/map_%d_custom.txt" % self.maptype)
+            self.gamemap.import_map("%s/saved/map_%d_custom.txt" % (self.my_path, self.maptype))
         except:
             pass
 
@@ -195,11 +196,11 @@ class GameManager(object):
 
     def get_highscore(self):
         try:
-            with open("saved/highscore.txt", "r") as f:
+            with open("%s/saved/highscore.txt" % self.my_path, "r") as f:
                 self.highscore = int(f.readline())
         except:
             self.highscore = 0
 
     def save_highscore(self):
-        with open("saved/highscore.txt", "w") as f:
+        with open("%s/saved/highscore.txt" % self.my_path, "w") as f:
             f.write(str(self.highscore))
