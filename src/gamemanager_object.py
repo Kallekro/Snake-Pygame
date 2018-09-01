@@ -113,6 +113,7 @@ class GameManager(object):
         last_big_food = pygame.time.get_ticks() - const.BIG_FOOD_FREQ / 2
 
         direction_input = (-1, -1)
+        move_queue = []
 
         running = True
         paused  = False
@@ -121,23 +122,24 @@ class GameManager(object):
                 if event.type == pygame.QUIT:
                     running = False
                 elif event.type == pygame.KEYDOWN:
-                    if event.key in [pygame.K_LEFT, pygame.K_a] \
-                    and self.snake.direction[0] != 1:
+                    if event.key in [pygame.K_LEFT, pygame.K_a]:
                         direction_input = (-1, 0)
-                    elif event.key in [pygame.K_RIGHT, pygame.K_d] \
-                    and self.snake.direction[0] != -1:
+                    elif event.key in [pygame.K_RIGHT, pygame.K_d]:
                         direction_input = (1, 0)
-                    elif event.key in [pygame.K_UP, pygame.K_w] \
-                    and self.snake.direction[1] != 1:
+                    elif event.key in [pygame.K_UP, pygame.K_w]:
                         direction_input = (0, -1)
-                    elif event.key in [pygame.K_DOWN, pygame.K_s] \
-                    and self.snake.direction[1] != -1:
+                    elif event.key in [pygame.K_DOWN, pygame.K_s]:
                         direction_input = (0, 1)
                     elif event.key == pygame.K_SPACE:
                         paused = not paused
 
             if not self.snake.alive and not paused:
                 return 1
+            if len(move_queue) < 3 and direction_input != (-1, -1):
+                move_queue.append(direction_input)
+            elif len(move_queue) == 0:
+                move_queue.append(direction_input)
+            direction_input = (-1, -1)
 
             now = pygame.time.get_ticks()
             if now - last_update >= const.UPDATE_FREQ + self.snake.dead_next_move * const.UPDATE_FREQ * const.LIFESAVER_TIME_FACTOR and not paused:
@@ -146,8 +148,11 @@ class GameManager(object):
                 if spawn_big_food:
                     last_big_food = now
                 self.gamemap.update(self.snake, spawn_big_food)
-                self.snake.update(self.gamemap, direction_input)
-                direction_input = (-1, -1)
+
+                next_move = move_queue[0]
+                move_queue = move_queue[1:]
+
+                self.snake.update(self.gamemap, next_move)
                 last_update = now
 
 

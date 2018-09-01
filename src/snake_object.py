@@ -28,7 +28,10 @@ class Snake(object):
 
     def update(self, gamemap, direction_input):
         if direction_input != (-1, -1):
-            self.direction = direction_input
+            if direction_input[0] != -1 * self.direction[0]:
+                self.direction = direction_input
+            elif direction_input[1] != -1 * self.direction[1]:
+                self.direction = direction_input
 
         head = self.positions[-1]
         new_head = (head[0] + self.direction[0] * const.STEPSIZE, head[1] + self.direction[1] * const.STEPSIZE)
