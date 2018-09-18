@@ -1,3 +1,4 @@
+#!/usr/bin python3
 import constants as const
 
 class Snake(object):
