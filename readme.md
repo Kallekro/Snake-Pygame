@@ -11,3 +11,6 @@ Go to this folder in your terminal and run the game with the command
 ```
 python3 snake.py
 ```
+
+# Screenshots
+![screenshot1](https://raw.githubusercontent.com/kallekro/Snake-Pygame/master/screenshots/screenshot1.png)
