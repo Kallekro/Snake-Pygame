@@ -14,3 +14,4 @@ python3 snake.py
 
 # Screenshots
 ![screenshot1](https://raw.githubusercontent.com/kallekro/Snake-Pygame/master/screenshots/screenshot1.png)
+![screenshot2](https://raw.githubusercontent.com/kallekro/Snake-Pygame/master/screenshots/screenshot2.png)
